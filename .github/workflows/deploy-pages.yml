@@ -1,0 +1,135 @@
+name: Deploy portfolio to GitHub Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build China-friendly static mirror
+        env:
+          SOURCE: https://veejess-portfolio.netlify.app
+        run: |
+          set -euo pipefail
+          mkdir -p site/assets
+          curl -fsSL --retry 3 "$SOURCE/" -o site/index.html
+          grep -oE '/assets/[^" ]+' site/index.html | sort -u | while read -r asset; do
+            mkdir -p "site/$(dirname "$asset")"
+            curl -fsSL --retry 3 "$SOURCE$asset" -o "site$asset"
+          done
+          cat <<'FILES' | while read -r file; do
+            portrait.jpg
+            sea-background-scroll.mp4
+            stills/404-rental-room.jpg
+            stills/a-wall-apart.jpg
+            stills/amazing-us.jpg
+            stills/hero.jpg
+            stills/paper-fragments.jpg
+            stills/the-weak.jpg
+            stills/waiting.jpg
+            projects-clean/waiting/01.jpg
+            projects-clean/waiting/02.jpg
+            projects-clean/waiting/03.jpg
+            projects-clean/the-weak/01.jpg
+            projects-clean/the-weak/02.jpg
+            projects-clean/the-weak/03.jpg
+            projects-clean/the-weak/04.jpg
+            projects-clean/the-weak/05.jpg
+            projects-clean/reunion-xie-brothers/01.jpg
+            projects-clean/reunion-xie-brothers/02.jpg
+            projects-clean/reunion-xie-brothers/03.jpg
+            projects-clean/paper-fragments/01.jpg
+            projects-clean/paper-fragments/02.jpg
+            projects-clean/paper-fragments/03.jpg
+            projects-clean/paper-fragments/04.jpg
+            projects-clean/paper-fragments/05.jpg
+            projects-clean/heart-pact/01.png
+            projects-clean/heart-pact/02.png
+            projects-clean/heart-pact/03.png
+            projects-clean/heart-pact/04.png
+            projects-clean/heart-pact/poster.png
+            projects-clean/amazing-us/01.jpg
+            projects-clean/amazing-us/02.jpg
+            projects-clean/amazing-us/03.jpg
+            projects-clean/amazing-us/04.jpg
+            projects-clean/amazing-us/05.jpg
+            projects-clean/amazing-us/06.jpg
+            projects-clean/a-wall-apart/01.jpg
+            projects-clean/a-wall-apart/02.jpg
+            projects-clean/a-wall-apart/03.jpg
+            projects-clean/a-wall-apart/04.jpg
+            projects-clean/a-wall-apart/05.jpg
+            projects-clean/404-rental-room/01.jpg
+            projects-clean/404-rental-room/02.jpg
+            projects-clean/404-rental-room/03.jpg
+            projects-clean/404-rental-room/04.jpg
+            projects-clean/404-rental-room/05.jpg
+            projects-clean/404-rental-room/06.jpg
+            projects/waiting/01.jpg
+            projects/waiting/02.jpg
+            projects/waiting/03.jpg
+            projects/the-weak/01.jpg
+            projects/the-weak/02.jpg
+            projects/the-weak/03.jpg
+            projects/the-weak/04.jpg
+            projects/the-weak/05.jpg
+            projects/reunion-xie-brothers/01.jpg
+            projects/reunion-xie-brothers/02.jpg
+            projects/reunion-xie-brothers/03.jpg
+            projects/paper-fragments/01.jpg
+            projects/paper-fragments/02.jpg
+            projects/paper-fragments/03.jpg
+            projects/paper-fragments/04.jpg
+            projects/paper-fragments/05.jpg
+            projects/amazing-us/01.jpg
+            projects/amazing-us/02.jpg
+            projects/amazing-us/03.jpg
+            projects/amazing-us/04.jpg
+            projects/amazing-us/05.jpg
+            projects/amazing-us/06.jpg
+            projects/a-wall-apart/01.jpg
+            projects/a-wall-apart/02.jpg
+            projects/a-wall-apart/03.jpg
+            projects/a-wall-apart/04.jpg
+            projects/a-wall-apart/05.jpg
+            projects/404-rental-room/01.jpg
+            projects/404-rental-room/02.jpg
+            projects/404-rental-room/03.jpg
+            projects/404-rental-room/04.jpg
+            projects/404-rental-room/05.jpg
+            projects/404-rental-room/06.jpg
+            assets/fish-cursor.png
+          FILES
+            [ -z "$file" ] && continue
+            mkdir -p "site/$(dirname "$file")"
+            curl -fsSL --retry 3 "$SOURCE/$file" -o "site/$file"
+          done
+          for css in site/assets/*.css; do
+            perl -0pi -e 's/\@import url\([^;]*fonts\.googleapis\.com[^;]*;//g' "$css"
+          done
+          touch site/.nojekyll
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
